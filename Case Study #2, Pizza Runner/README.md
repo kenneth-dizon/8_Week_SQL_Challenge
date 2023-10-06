@@ -1,16 +1,548 @@
 # Case Study #2, Pizza Runner
 
-![pizza_runner_into_pic](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/16ac8aa4-ba14-4d20-8e3a-399d45473694)
+<p align="center">
+<img src="https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/16ac8aa4-ba14-4d20-8e3a-399d45473694">
+</p>
 
 ## Table of Contents
 - [Problem Statement](#problem-statement)
 - [Entity Relationship Diagram](#entity-relationship-diagram)
 - [Creating Tables](#creating-tables)
-- [Cleaning tables](#cleaning-tables)
+- [Cleaning Tables](#cleaning-tables)
 - [A. Pizza Metrics](#a.-pizza-metrics)
 - [B. Runner and Customer Experience](#b.-runner-and-customer-experience)
 - [C. Ingredient Optimisation](#c.-ingredient-optimisation)
 - [D. Pricing and Ratings](#d.-pricing-and-ratings)
 
-Creating Tables
+## Problem Statement
+Danny is starting a pizza from his house and has hired runners. He has already created tables containing information about the menu and deliveries. He needs your help to clean and analyze the data to gain insights about his business.
+
+## Entity Relationship Diagram
+<p align="center">
+<<img src="https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/07211c4f-f533-4304-874e-1123d8455757">
+</p>
+
+## Creating Tables
 To begin the case study, I created all tables using pgAdmin 4.
+
+
+````sql
+CREATE SCHEMA pizza_runner;
+SET search_path = pizza_runner;
+
+DROP TABLE IF EXISTS runners;
+CREATE TABLE runners (
+  "runner_id" INTEGER,
+  "registration_date" DATE
+);
+INSERT INTO runners
+  ("runner_id", "registration_date")
+VALUES
+  (1, '2021-01-01'),
+  (2, '2021-01-03'),
+  (3, '2021-01-08'),
+  (4, '2021-01-15');
+
+DROP TABLE IF EXISTS customer_orders;
+CREATE TABLE customer_orders (
+  "order_id" INTEGER,
+  "customer_id" INTEGER,
+  "pizza_id" INTEGER,
+  "exclusions" VARCHAR(4),
+  "extras" VARCHAR(4),
+  "order_time" TIMESTAMP
+);
+
+INSERT INTO customer_orders
+  ("order_id", "customer_id", "pizza_id", "exclusions", "extras", "order_time")
+VALUES
+  ('1', '101', '1', '', '', '2020-01-01 18:05:02'),
+  ('2', '101', '1', '', '', '2020-01-01 19:00:52'),
+  ('3', '102', '1', '', '', '2020-01-02 23:51:23'),
+  ('3', '102', '2', '', NULL, '2020-01-02 23:51:23'),
+  ('4', '103', '1', '4', '', '2020-01-04 13:23:46'),
+  ('4', '103', '1', '4', '', '2020-01-04 13:23:46'),
+  ('4', '103', '2', '4', '', '2020-01-04 13:23:46'),
+  ('5', '104', '1', 'null', '1', '2020-01-08 21:00:29'),
+  ('6', '101', '2', 'null', 'null', '2020-01-08 21:03:13'),
+  ('7', '105', '2', 'null', '1', '2020-01-08 21:20:29'),
+  ('8', '102', '1', 'null', 'null', '2020-01-09 23:54:33'),
+  ('9', '103', '1', '4', '1, 5', '2020-01-10 11:22:59'),
+  ('10', '104', '1', 'null', 'null', '2020-01-11 18:34:49'),
+  ('10', '104', '1', '2, 6', '1, 4', '2020-01-11 18:34:49');
+
+DROP TABLE IF EXISTS runner_orders;
+CREATE TABLE runner_orders (
+  "order_id" INTEGER,
+  "runner_id" INTEGER,
+  "pickup_time" VARCHAR(19),
+  "distance" VARCHAR(7),
+  "duration" VARCHAR(10),
+  "cancellation" VARCHAR(23)
+);
+
+INSERT INTO runner_orders
+  ("order_id", "runner_id", "pickup_time", "distance", "duration", "cancellation")
+VALUES
+  ('1', '1', '2020-01-01 18:15:34', '20km', '32 minutes', ''),
+  ('2', '1', '2020-01-01 19:10:54', '20km', '27 minutes', ''),
+  ('3', '1', '2020-01-03 00:12:37', '13.4km', '20 mins', NULL),
+  ('4', '2', '2020-01-04 13:53:03', '23.4', '40', NULL),
+  ('5', '3', '2020-01-08 21:10:57', '10', '15', NULL),
+  ('6', '3', 'null', 'null', 'null', 'Restaurant Cancellation'),
+  ('7', '2', '2020-01-08 21:30:45', '25km', '25mins', 'null'),
+  ('8', '2', '2020-01-10 00:15:02', '23.4 km', '15 minute', 'null'),
+  ('9', '2', 'null', 'null', 'null', 'Customer Cancellation'),
+  ('10', '1', '2020-01-11 18:50:20', '10km', '10minutes', 'null');
+
+DROP TABLE IF EXISTS pizza_names;
+CREATE TABLE pizza_names (
+  "pizza_id" INTEGER,
+  "pizza_name" TEXT
+);
+INSERT INTO pizza_names
+  ("pizza_id", "pizza_name")
+VALUES
+  (1, 'Meatlovers'),
+  (2, 'Vegetarian');
+
+DROP TABLE IF EXISTS pizza_recipes;
+CREATE TABLE pizza_recipes (
+  "pizza_id" INTEGER,
+  "toppings" TEXT
+);
+INSERT INTO pizza_recipes
+  ("pizza_id", "toppings")
+VALUES
+  (1, '1, 2, 3, 4, 5, 6, 8, 10'),
+  (2, '4, 6, 7, 9, 11, 12');
+
+DROP TABLE IF EXISTS pizza_toppings;
+CREATE TABLE pizza_toppings (
+  "topping_id" INTEGER,
+  "topping_name" TEXT
+);
+INSERT INTO pizza_toppings
+  ("topping_id", "topping_name")
+VALUES
+  (1, 'Bacon'),
+  (2, 'BBQ Sauce'),
+  (3, 'Beef'),
+  (4, 'Cheese'),
+  (5, 'Chicken'),
+  (6, 'Mushrooms'),
+  (7, 'Onions'),
+  (8, 'Pepperoni'),
+  (9, 'Peppers'),
+  (10, 'Salami'),
+  (11, 'Tomatoes'),
+  (12, 'Tomato Sauce');
+````
+
+
+
+## Cleaning Tables
+Next, I cleaned the tables.
+
+First I changed the 'null' and '' values from the customer_orders table to NULL.
+
+
+
+````sql
+UPDATE customer_orders 
+SET exclusions = NULL
+WHERE exclusions LIKE 'null';
+
+UPDATE customer_orders 
+SET exclusions = NULL
+WHERE exclusions LIKE '';
+
+UPDATE customer_orders 
+SET extras = NULL
+WHERE extras LIKE '';
+````
+
+
+I repeated this process again for the runner_orders table.
+
+
+````sql
+UPDATE runner_orders
+SET pickup_time = NULL
+WHERE pickup_time LIKE 'null';
+
+UPDATE runner_orders
+SET distance = NULL
+WHERE distance LIKE 'null';
+
+UPDATE runner_orders
+SET duration = NULL
+WHERE duration LIKE 'null';
+
+UPDATE runner_orders
+SET cancellation = NULL
+WHERE cancellation LIKE 'null';
+
+UPDATE runner_orders
+SET cancellation = NULL
+WHERE cancellation LIKE '';
+````
+
+
+I then removed  extraneous information from the distance and duration columns of the runners_orders table. 
+
+
+````sql
+UPDATE runner_orders
+SET distance = REPLACE(REPLACE(distance, 'km', ''), ' km', '')  
+
+UPDATE runner_orders
+SET duration = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(duration, ' mins', ''), 'mins', ''), ' minute', ''), 'minutes', ''), ' minutes', ''), 's', '')
+````
+
+
+Finally, I converted the columns from the runner_orders table to the appropriate data type.
+
+
+````sql
+ALTER TABLE runner_orders
+ALTER COLUMN pickup_time TYPE TIMESTAMP
+USING pickup_time::timestamp without time zone;
+
+ALTER TABLE runner_orders
+ALTER COLUMN distance TYPE FLOAT
+USING distance::FLOAT;
+
+ALTER TABLE runner_orders
+ALTER COLUMN duration TYPE INTEGER
+USING duration::integer
+````
+
+
+With the data cleaned, I could finally answer the case study questions. 
+
+
+## A. Pizza Metrics
+
+
+### 1. How many pizzas were ordered?
+
+
+````sql
+SELECT COUNT(order_id)
+FROM customer_orders
+````
+
+<p align="center">
+  <img src="https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/5fe6f464-df41-48f7-835c-0f05f40c8158">
+</p> 
+
+
+### 2. How many unique customer orders were made?
+
+
+````sql
+SELECT  COUNT(DISTINCT order_id) as unique_orders
+FROM customer_orders
+````
+
+
+![2](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/ad37d0c5-738d-4ef9-b0ca-3ac352579a36)
+
+
+### 3. How many successful orders were delivered by each runner?
+
+
+````sql
+SELECT COUNT(order_id) - COUNT(cancellation) as successful_orders
+FROM runner_orders
+````
+
+
+![3](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/f9bf6e7d-3768-42ab-934c-0fe52d6ad699)
+
+
+### 4. How many of each type of pizza was delivered?
+
+
+````sql
+SELECT c.pizza_id, 
+ p.pizza_name,
+ COUNT (c.pizza_id)
+FROM customer_orders c
+INNER JOIN pizza_names p
+on c.pizza_id = p.pizza_id
+WHERE order_id not in (6, 9)
+GROUP BY c.pizza_id, p.pizza_name
+ORDER BY c.pizza_id
+````
+
+
+![4](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/f1498365-ec52-4904-ad46-942988cbe457)
+
+
+### 5.  How many Vegetarian and Meatlovers were ordered by each customer?
+
+
+````sql
+WITH CTE AS (
+ SELECT customer_id, p.pizza_id, p.pizza_name 
+ FROM customer_orders c
+ INNER JOIN pizza_names p
+ ON c.pizza_id = p.pizza_id)
+SELECT customer_id, pizza_name, COUNT (customer_id)
+FROM CTE
+GROUP BY customer_id, pizza_name
+ORDER by customer_id
+````
+
+
+![5](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/830efebb-685a-4768-9198-f7cfcecbd177)
+
+
+
+### 6.  What was the maximum number of pizzas delivered in a single order?
+
+
+````sql
+SELECT order_id, COUNT(pizza_id) as max_ordered
+ FROM customer_orders
+ GROUP by order_id
+ ORDER by max_ordered des
+ LIMIT 1
+````
+
+
+![6](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/7f12124d-08db-4064-be40-e17209097698)
+
+
+
+### 7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
+
+
+````sql
+SELECT order_id, COUNT(order_id) as orders_with_at_least_1_change
+FROM customer_orders
+WHERE exclusions IS NOT NULL or EXTRAS IS NOT NULL
+AND order_id NOT IN (6, 9)
+GROUP BY order_id
+ORDER BY order_id
+````
+
+
+![7](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/5371703a-3737-4a1c-b3dc-58b0f4615b87)
+
+
+
+````sql
+SELECT order_id, COUNT(order_id) AS orders_with_no_changes
+FROM customer_orders
+WHERE  exclusions IS NULL AND extras IS NULL
+AND order_id NOT IN (6, 9)
+GROUP BY order_id
+ORDER BY order_id;
+````
+
+
+![7 1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/33dd6640-9772-41ef-ad5f-ea3405c07b90)
+
+
+
+### 8. How many pizzas were delivered that had both exclusions and extras?
+
+````sql
+SELECT order_id, COUNT(order_id) as orders_with_exclu_and_extras
+FROM customer_orders
+WHERE exclusions IS NOT NULL AND EXTRAS IS NOT NULL
+AND order_id NOT IN (6, 9)
+GROUP BY order_id
+ORDER BY order_id
+````
+
+
+![8](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/e5a6ab12-0b31-44a2-a386-5466c8bb22f9)
+
+
+### 9. What was the total volume of pizzas ordered for each hour of the day?
+
+
+````sql
+SELECT  EXTRACT(HOUR FROM order_time) AS hour, COUNT(pizza_ID) as number_of_pizzas
+FROM customer_orders
+GROUP BY hour
+ORDER BY hour
+````
+
+
+![9](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/8d62c1fe-686d-4d95-a377-37d9223d2fc9)
+
+
+
+### 10. What was the volume of orders for each day of the week?
+
+
+````sql
+SELECT  TO_CHAR(order_time, 'Day') AS day, COUNT(pizza_ID) as number_of_pizzas
+FROM customer_orders
+GROUP BY day
+ORDER by  number_of_pizzas
+````
+
+
+![10](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/d71e650e-12be-4fec-93c7-01408e4426c5)
+
+
+## B. Runner and Customer Experience
+
+### 1. How many runners signed up for each 1 week period? (i.e. week starts 2021-01-01)
+
+ ````sql
+SELECT TO_CHAR(registration_date, 'W') AS week,
+ COUNT(runner_id)
+FROM runners
+GROUP BY week
+ORDER BY week
+ ````
+
+![B1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/e225d52c-9bd5-4e51-8c30-958e7c6093d4)
+
+### 2. What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pickup the order?
+ 
+ ````sql
+WITH CTE AS(
+ SELECT 
+  runner_id,
+  c.order_id,
+     (EXTRACT(EPOCH FROM (pickup_time - order_time)/60)) AS time_diff
+ FROM runner_orders r
+ INNER JOIN customer_orders c
+ ON r.order_id = c.order_id
+ WHERE c.order_id NOT IN (6,9))
+SELECT runner_id, ROUND(AVG(time_diff), 2) AS avg_time_in_minutes
+FROM CTE
+GROUP BY runner_id
+ORDER BY runner_id
+````
+
+![B2](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/3479848c-221d-4344-af80-51c1c4aaac39)
+
+### 3. Is there any relationship between the number of pizzas and how long the order takes to prepare?
+
+ ````sql
+WITH CTE AS(
+ SELECT 
+     c.order_id,
+     pizza_id,
+     EXTRACT(EPOCH FROM(pickup_time - order_time))/60 AS time_diff
+ FROM runner_orders r
+ INNER JOIN customer_orders c
+ ON r.order_id = c.order_id
+ WHERE c.order_id NOT IN (6,9))
+SELECT order_id, COUNT(pizza_id) as num_of_pizzas, ROUND(AVG(time_diff), 2) AS avg_time_in_minutes
+FROM CTE
+GROUP BY order_id
+ORDER BY num_of_pizzas
+````
+
+![B3](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/57b2719e-0175-445e-a92e-5b53f01e9ff4)
+
+With the exception of order 8, the higher the number of pizzas in the order, the longer it takes to prepare.
+
+ ````sql
+WITH CTE2 AS(
+WITH CTE AS(
+ SELECT 
+     c.order_id,
+     pizza_id,
+     EXTRACT(EPOCH FROM(pickup_time - order_time))/60 AS time_diff
+ FROM runner_orders r
+ INNER JOIN customer_orders c
+ ON r.order_id = c.order_id
+ WHERE c.order_id NOT IN (6,9))
+SELECT order_id, COUNT(pizza_id) as num_of_pizzas, AVG(time_diff) AS time_diff
+FROM CTE
+GROUP BY order_id
+ORDER BY num_of_pizzas)
+SELECT num_of_pizzas, ROUND(avg(time_diff),2) AS avg_time_in_min
+FROM CTE2
+GROUP BY num_of_pizzas
+````
+
+![B3 1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/d5f86888-6fb1-4840-836b-c18b65748202)
+
+By using the query above, we find out how long it takes to prepare an order based on the number of pizzas.
+
+
+
+### 4. What was the average distance travelled for each customer?
+
+ ````sql
+SELECT 
+  customer_id,
+ ROUND(AVG(distance)::numeric, 2) as avg_distance_travelled
+ FROM runner_orders r
+ INNER JOIN customer_orders c
+ ON r.order_id = c.order_id
+ WHERE c.order_id NOT IN (6,9)
+GROUP BY customer_id
+ORDER BY customer_id
+ ````
+![B4](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/a3e2edf5-4e94-4743-be59-f97c31dfae12)
+
+
+### 5. What was the difference between the longest and shortest delivery times for all orders?
+
+````sql
+SELECT MAX(duration) - MIN (duration) as difference
+FROM runner_orders
+ ````
+![B5](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/1c4cf2eb-795b-42fb-826a-aad83689c4cb)
+
+
+### 6. What was the average speed for each runner for each delivery and do you notice any trend for these values?
+
+````sql
+SELECT 
+  runner_id,  
+  order_id, 
+  ROUND((distance / (duration / 60.0))::numeric, 2) as km_per_hour
+FROM runner_orders
+WHERE order_id NOT IN (6, 9)
+ORDER BY runner_id, order_id
+````
+![B6](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/3bbfa02f-a421-49c9-8890-6a59669f234e)
+
+
+From the results of the query, we find out that
+runner 1 has an average speed between 37.5 and 60 km per hour,
+runner 2 has an average speed between 35.1 and 93.6 km per hour,
+and runner 3 has an average speed of 40 km per hour.
+
+
+### 7. What is the successful delivery percentage for each runner?
+
+````sql
+SELECT runner_id,
+ CAST(COUNT(duration) as FLOAT)/CAST(COUNT(order_id) as FLOAT)*100 AS percent_sucess
+FROM runner_orders
+GROUP BY runner_id
+ORDER BY runner_id
+````
+
+![B7](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/b2ddb242-3e85-42fe-8999-3f9c65cea4e7)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
