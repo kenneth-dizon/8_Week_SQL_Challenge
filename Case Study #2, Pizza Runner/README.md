@@ -10,9 +10,9 @@
 - [Creating Tables](#creating-tables)
 - [Cleaning Tables](#cleaning-tables)
 - [A. Pizza Metrics](#a-pizzametrics)
-- [B. Runner and Customer Experience](#b.-runnerandcustomerexperience)
-- [C. Ingredient Optimisation](#c.-ingredientoptimisation)
-- [D. Pricing and Ratings](#d.-pricingandratings)
+- [B. Runner and Customer Experience](#b-runner-and-customer-experience)
+- [C. Ingredient Optimisation](#c-ingredient-optimisation)
+- [D. Pricing and Ratings](#d-pricing-and-ratings)
 
 ## Problem Statement
 Danny is starting a pizza from his house and has hired runners. He has already created tables containing information about the menu and deliveries. He needs your help to clean and analyze the data to gain insights about his business.
@@ -532,17 +532,346 @@ ORDER BY runner_id
 ![B7](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/b2ddb242-3e85-42fe-8999-3f9c65cea4e7)
 
 
+## C. Ingredient Optimisation
 
 
+### 1. What are the standard ingredients for each pizza?
+
+To answer this question, I created a new table pizza_recipes_2 that reformatted the original data from pizza_recipes. The original table listed all the pizza toppings for each pizza as a singular text block. The new table however splits up each topping and categorizes them as an integer.
+
+````sql
+CREATE TABLE pizza_recipes_2
+(pizza_id int, toppings int);
+INSERT INTO pizza_recipes_2
+(pizza_id, toppings)
+VALUES
+(1,1),
+(1,2),
+(1,3),
+(1,4),
+(1,5),
+(1,6),
+(1,8),
+(1,10),
+(2,4),
+(2,6),
+(2,7),
+(2,9),
+(2,11),
+(2,12);
+````
+
+![C1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/a18540d5-2497-4455-8411-9142d114cb0d)
 
 
+I then found the ingredients for each pizza!
+
+````sql
+SELECT pizza_name, string_agg(topping_name, ', ') as toppings
+FROM pizza_names n
+INNER JOIN pizza_recipes_2 r
+ON n.pizza_id = r.pizza_id
+INNER JOIN pizza_toppings t
+ON t.topping_id = r.toppings
+GROUP BY pizza_name
+````
+
+![C1 2](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/384955cf-6a19-4a9a-ac93-6fb0b91258e4)
 
 
+### 2. What was the most commonly added extra?
+
+To answer this question, I first inserted four columns that listed each exclusion and extra separately as an integer.
+
+````sql
+ALTER TABLE customer_orders
+ADD COLUMN exclusions_1 INT NULL,
+ADD COLUMN  exclusions_2 INT NULL, 
+ADD COLUMN extras_1 INT NULL,
+ADD COLUMN  extras_2 INT NULL;
+
+UPDATE customer_orders
+SET  exclusions_1 = 4, extras_1 = 1, extras_2 = 5
+WHERE order_id = 9;
+
+UPDATE customer_orders
+SET  exclusions_1 = 2, exclusions_2  = 6, extras_1  = 1, extras_2  = 4
+WHERE order_id = 10 AND exclusions LIKE '2, 6';
+
+UPDATE customer_orders
+SET  extras_1 = 1
+WHERE order_id = 5;
+
+UPDATE customer_orders
+SET  extras_1 = 1
+WHERE customer_id = 105;
+
+UPDATE customer_orders
+SET   exclusions_1 = 4
+WHERE order_id = 4;
+````
+
+![c2](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/bcc2a392-a0f3-4830-b39e-2c3c7f08e948)
 
 
+Then I wrote a query!
+
+````sql
+WITH CTE AS(
+SELECT  extras_1 as topping_id,  COUNT(extras_1) as times_ordered
+FROM customer_orders
+WHERE extras_1 IS NOT NULL
+GROUP BY  extras_1
+
+UNION
+
+SELECT extras_2, COUNT(extras_2)
+FROM customer_orders
+WHERE extras_2 IS NOT NULL
+GROUP BY  extras_2 )
+
+SELECT t.topping_id, topping_name, times_ordered
+FROM CTE 
+INNER JOIN pizza_toppings t
+ON t.topping_id = CTE.topping_id
+````
+
+![c2 1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/232f48c7-9d7f-47f9-8bb6-1dd2c5896e87)
 
 
+### 3. What was the most common exclusion?
+
+````sql
+WITH CTE AS(
+SELECT  exclusions_1 as topping_id,  COUNT(exclusions_1) as times_ordered
+FROM customer_orders
+WHERE exclusions_1 IS NOT NULL
+GROUP BY  exclusions_1
+
+UNION
+
+SELECT exclusions_2, COUNT(exclusions_2)
+FROM customer_orders
+WHERE exclusions_2 IS NOT NULL
+GROUP BY  exclusions_2 )
+
+SELECT t.topping_id, topping_name, times_ordered
+FROM CTE 
+INNER JOIN pizza_toppings t
+ON t.topping_id = CTE.topping_id
+````
+
+![c3](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/4e70b72a-1972-4aff-a606-b6a715417475)
 
 
+### 4. Generate an order item for each record in the customers_orders table in the format of one of the following:
+- Meat Lovers
+- Meat Lovers - Exclude Beef
+- Meat Lovers - Extra Bacon
+- Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers
+
+To do this I first created a table that listed the names of all the exclusions and extras.
+
+````sql
+CREATE TABLE customer_orders_2 AS  (
+SELECT c.order_id, customer_id, c.pizza_id, exclusions, extras, order_time, exclusions_1, exclusions_2, extras_1, extras_2, pizza_name, 
+ t.topping_name as exclusions_1_topping,
+ t2.topping_name as exclusions_2_topping,
+ t3.topping_name as extras_1_topping,
+ t4.topping_name as extras_2_topping
+FROM customer_orders c
+INNER JOIN pizza_names n
+ON c.pizza_id = n.pizza_id
+LEFT JOIN pizza_toppings t
+ON   c.exclusions_1 = t.topping_id 
+LEFT JOIN pizza_toppings t2
+ON   c.exclusions_2 = t2.topping_id  
+LEFT JOIN pizza_toppings t3
+ON   c.extras_1 = t3.topping_id  
+LEFT JOIN pizza_toppings t4
+ON   c.extras_2 = t4.topping_id)
+````
+
+![c4](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/c096b441-5abb-470b-8b50-8024ab92f8e6)
 
 
+Then I wrote this query!
+
+````sql
+SELECT order_id,
+CASE
+ WHEN COALESCE (exclusions_1_topping, exclusions_2_topping, extras_1_topping, extras_2_topping) IS NULL THEN pizza_name
+ WHEN COALESCE (exclusions_2_topping, extras_1_topping, extras_2_topping) IS NULL THEN CONCAT(pizza_name, ' - Exclude ', exclusions_1_topping) 
+    WHEN COALESCE (exclusions_1_topping, exclusions_2_topping, extras_2_topping) IS NULL THEN CONCAT(pizza_name, ' - Extra ', extras_1_topping)
+ WHEN COALESCE (exclusions_1_topping, exclusions_2_topping, extras_1_topping, extras_2_topping) IS NOT NULL AND COALESCE (exclusions_2_topping) IS NULL THEN CONCAT(pizza_name, ' - Exclude ', exclusions_1_topping, ' - Extra ', extras_1_topping, ', ', extras_2_topping)
+ WHEN COALESCE (exclusions_1_topping, exclusions_2_topping, extras_1_topping, extras_2_topping) IS NOT NULL THEN CONCAT(pizza_name, ' - Exclude ', exclusions_1_topping, ', ', exclusions_2_topping, ' - Extra ', extras_1_topping, ', ', extras_2_topping)
+ END as order
+FROM customer_orders_2
+ORDER BY order_id
+````
+
+![c4 1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/90ab947c-87b8-4eae-b8f9-6d0913ecb945)
+
+
+### 5. Generate an alphabetically ordered comma-separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients
+
+For example: "Meat Lovers: 2xBacon, Beef, ... , Salami"
+
+I first created a table that aggregated the topping names and listed the exclusions and extras.
+
+````sql
+CREATE TABLE customer_orders_3 AS(
+ 
+WITH CTE AS(
+SELECT pizza_name, string_agg(topping_name, ', ') as toppings
+FROM pizza_names n
+INNER JOIN pizza_recipes_2 r
+ON n.pizza_id = r.pizza_id
+INNER JOIN pizza_toppings t
+ON t.topping_id = r.toppings
+GROUP BY pizza_name)
+ 
+SELECT order_id, c.pizza_name, toppings, exclusions_1_topping,  exclusions_2_topping, extras_1_topping, extras_2_topping
+FROM CTE c
+INNER JOIN customer_orders_2 co
+ON c.pizza_name = co.pizza_name
+ORDER BY order_id)
+````
+
+![c5](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/7b69bad2-ac34-47f3-b6b9-9717f5b9f37a)
+
+Then I wrote the query that placed '2x' in front of extra ingredients and deleted exclusions.
+
+
+````sql
+WITH CTE AS (
+ SELECT order_id, CONCAT(pizza_name, ' : ' ,
+  CASE 
+   WHEN POSITION(exclusions_1_topping in toppings) > 0 AND POSITION(exclusions_2_topping in toppings) IS NULL 
+  AND POSITION(extras_1_topping in toppings) IS NULL AND POSITION(extras_2_topping in toppings) IS NULL 
+  THEN REPLACE(toppings, exclusions_1_topping, ' ') -- order 4
+   WHEN POSITION(exclusions_1_topping in toppings) IS NULL AND POSITION(exclusions_2_topping in toppings) IS NULL 
+  AND POSITION(extras_1_topping in toppings) > 0 AND POSITION(extras_2_topping in toppings) IS NULL 
+  THEN REPLACE(toppings, extras_1_topping, CONCAT('2X', extras_1_topping)) -- order 5
+  WHEN POSITION(exclusions_1_topping in toppings) IS NULL AND POSITION(exclusions_2_topping in toppings) IS NULL 
+  AND POSITION(extras_1_topping in toppings) = 0 AND POSITION(extras_2_topping in toppings) IS NULL 
+  THEN CONCAT (extras_1_topping, ', ', toppings) --order 7
+    WHEN POSITION(exclusions_1_topping in toppings) > 0 AND POSITION(exclusions_2_topping in toppings) IS NULL 
+  AND POSITION(extras_1_topping in toppings) > 0 AND POSITION(extras_2_topping in toppings) > 0 
+  THEN REPLACE(REPLACE(REPLACE(toppings, exclusions_1_topping, ''), extras_1_topping, CONCAT('2x', extras_1_topping)), extras_2_topping, CONCAT('2x', extras_2_topping)) -- order 9
+   WHEN POSITION(exclusions_1_topping in toppings) > 0 AND POSITION(exclusions_2_topping in toppings) > 0
+  AND position(extras_1_topping in toppings) > 0 AND position(extras_2_topping in toppings) > 0 
+    THEN REPLACE(REPLACE(REPLACE(REPLACE(toppings, exclusions_1_topping, ''), exclusions_2_topping, ''), extras_1_topping, CONCAT('2x', extras_1_topping)), extras_2_topping, CONCAT('2x', extras_2_topping)) -- order 10 (first one)
+   ELSE toppings
+   END)
+ FROM customer_orders_3)
+ 
+SELECT order_id, REPLACE (concat, ' ,', '') AS topping
+FROM cte
+````
+
+![c5 1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/3635226b-22ba-4f2a-b047-ddcdb99d21f1)
+
+
+### 6. What is the total quantity of each ingredient used in all delivered pizzas sorted by most frequent first?
+
+It took many queries to answer this question. First I created three tables that listed the ingredient count of regular pizzas, exclusions, and extras. I excluded orders 6 and 9 from all queries since those orders were canceled and never delivered.
+
+````sql
+--Regular pizza ingredient count
+
+CREATE TEMP TABLE toppings_final AS (
+
+WITH CTE AS (
+SELECT order_id, c.pizza_id, toppings
+FROM customer_orders_2 c
+INNER JOIN pizza_recipes_2 pr
+ON c.pizza_id = pr.pizza_id
+WHERE order_id NOT IN (6, 9)
+ORDER BY order_id, pizza_id, toppings)
+ 
+SELECT toppings, count (toppings) as count_toppings  
+FROM CTE
+GROUP BY toppings
+ORDER BY toppings)
+````
+![c regular_pizza_toppings](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/9f331532-019f-4c89-8b91-133b8dc78b94)
+
+````sql
+--Exclusions ingredient count
+
+CREATE TEMP TABLE exclusions_final AS (
+ 
+WITH exclusions as (
+SELECT exclusions_1 as exclusions
+FROM customer_orders_2
+WHERE exclusions_1 is not null
+AND order_id NOT IN (6, 9)
+
+UNION ALL
+
+SELECT exclusions_2
+FROM customer_orders_2
+WHERE exclusions_2 is not null
+AND order_id NOT IN (6, 9))
+
+SELECT exclusions as excluded_toppings, count (exclusions) as count_exclusions
+FROM exclusions
+GROUP BY exclusions
+ORDER BY exclusions)
+````
+
+![c exclusions](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/d3ebd9f8-f479-4320-a72e-df245fbe8e34)
+
+````sql
+--Extras ingredient count
+
+CREATE TEMP TABLE extras_final AS (
+
+WITH extras as (
+SELECT extras_1 as extras
+FROM customer_orders_2
+WHERE extras_1 is not null
+AND order_id NOT IN (6, 9)
+
+UNION ALL
+
+SELECT extras_2
+FROM customer_orders_2
+WHERE extras_2 is not null
+AND order_id NOT IN (6, 9))
+
+SELECT extras as extra_toppings, count (extras) as count_extras
+FROM extras
+GROUP BY extras
+ORDER BY extras)
+````
+![c extras](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/e78283a6-cc89-427a-b0aa-bf13054d6e1b)
+
+
+Then I created another table where I found the total count of all toppings by joining the three previously created tables and adding and subtracting the appropriate columns.
+
+````sql
+CREATE TEMP TABLE final_table AS (
+SELECT toppings, count_toppings - COALESCE(count_exclusions, 0)  + COALESCE(count_extras, 0) as count_toppings
+FROM toppings_list_final t
+LEFT JOIN exclusions_final exc
+ON t.toppings = exc.excluded_toppings 
+LEFT JOIN extras_final ext
+ON t.toppings = ext.extra_toppings)
+````
+
+![c combined_tables](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/0dc02ca6-d1df-446d-b191-07230ac5a053)
+
+
+Finally, I joined the pizza_toppings table to get the topping names and sorted the count_toppings column to place the most frequently used ingredients on top.
+
+````sql
+SELECT topping_name, count_toppings
+FROM pizza_toppings p
+INNER JOIN final_table f
+ON f.toppings = p.topping_id
+ORDER BY count_toppings desc
+````
+
+![c final_table](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/56071db9-edf6-429c-a9b2-ba7034209c24)
