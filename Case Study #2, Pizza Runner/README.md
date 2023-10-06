@@ -9,10 +9,10 @@
 - [Entity Relationship Diagram](#entity-relationship-diagram)
 - [Creating Tables](#creating-tables)
 - [Cleaning Tables](#cleaning-tables)
-- [A. Pizza Metrics](#a.-pizza-metrics)
-- [B. Runner and Customer Experience](#b.-runner-and-customer-experience)
-- [C. Ingredient Optimisation](#c.-ingredient-optimisation)
-- [D. Pricing and Ratings](#d.-pricing-and-ratings)
+- [A. Pizza Metrics](#a-pizzametrics)
+- [B. Runner and Customer Experience](#b.-runnerandcustomerexperience)
+- [C. Ingredient Optimisation](#c.-ingredientoptimisation)
+- [D. Pricing and Ratings](#d.-pricingandratings)
 
 ## Problem Statement
 Danny is starting a pizza from his house and has hired runners. He has already created tables containing information about the menu and deliveries. He needs your help to clean and analyze the data to gain insights about his business.
