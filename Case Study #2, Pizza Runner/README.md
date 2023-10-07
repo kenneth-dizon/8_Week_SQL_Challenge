@@ -12,7 +12,7 @@
 - [A. Pizza Metrics](#a-pizzametrics)
 - [B. Runner and Customer Experience](#b-runner-and-customer-experience)
 - [C. Ingredient Optimisation](#c-ingredient-optimisation)
-- [D. Pricing and Ratings](#d-pricing-and-ratings)
+- [D. Pricing and Ratings](#d-pricing-andratings)
 - [Conclusion](#conclusion)
 
 ## Problem Statement
