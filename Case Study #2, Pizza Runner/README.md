@@ -13,6 +13,7 @@
 - [B. Runner and Customer Experience](#b-runner-and-customer-experience)
 - [C. Ingredient Optimisation](#c-ingredient-optimisation)
 - [D. Pricing and Ratings](#d-pricing-and-ratings)
+- [Conclusion](#conclusion)
 
 ## Problem Statement
 Danny is starting a pizza from his house and has hired runners. He has already created tables containing information about the menu and deliveries. He needs your help to clean and analyze the data to gain insights about his business.
@@ -229,13 +230,12 @@ With the data cleaned, I could finally answer the case study questions.
 
 
 ````sql
-SELECT COUNT(order_id)
+SELECT COUNT(order_id) as total_ordered
 FROM customer_orders
 ````
 
-<p align="center">
+
   <img src="https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/5fe6f464-df41-48f7-835c-0f05f40c8158">
-</p> 
 
 
 ### 2. How many unique customer orders were made?
@@ -467,11 +467,9 @@ SELECT num_of_pizzas, ROUND(avg(time_diff),2) AS avg_time_in_min
 FROM CTE2
 GROUP BY num_of_pizzas
 ````
-
-![B3 1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/d5f86888-6fb1-4840-836b-c18b65748202)
-
 By using the query above, we find out how long it takes to prepare an order based on the number of pizzas.
 
+![B3 1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/d5f86888-6fb1-4840-836b-c18b65748202)
 
 
 ### 4. What was the average distance travelled for each customer?
@@ -514,9 +512,9 @@ ORDER BY runner_id, order_id
 
 
 From the results of the query, we find out that
-runner 1 has an average speed between 37.5 and 60 km per hour,
-runner 2 has an average speed between 35.1 and 93.6 km per hour,
-and runner 3 has an average speed of 40 km per hour.
+- runner 1 has an average speed between 37.5 and 60 km per hour,
+- runner 2 has an average speed between 35.1 and 93.6 km per hour,
+- and runner 3 has an average speed of 40 km per hour.
 
 
 ### 7. What is the successful delivery percentage for each runner?
@@ -875,3 +873,181 @@ ORDER BY count_toppings desc
 ````
 
 ![c final_table](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/56071db9-edf6-429c-a9b2-ba7034209c24)
+
+## D. Pricing and Ratings
+
+### 1. If a Meat Lovers pizza costs $12 and Vegetarian costs $10 and there were no charges for changes - how much money has Pizza Runner made so far if there are no delivery fees?
+
+````sql
+SELECT 
+ SUM (CASE WHEN pizza_id = 1 THEN 12
+ ELSE 10
+ END)
+FROM customer_orders
+WHERE ORDER_ID NOT IN (6, 9)
+````
+
+![d1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/a1e0c52c-5d0b-4161-909c-c542ff4dfb33)
+
+
+### 2. What if there was an additional $1 charge for any pizza extras?
+
+````sql
+SELECT COUNT(extras_1) + COUNT(extras_2) +
+ SUM (CASE WHEN pizza_id = 1 THEN 12
+ ELSE 10
+ END) as total
+FROM customer_orders_2
+WHERE ORDER_ID NOT IN (6, 9)
+````
+
+![d2](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/4c8b7161-1b7a-4712-980f-71e05e9ca89f)
+
+
+###  3. The Pizza Runner team now wants to add an additional ratings system that allows customers to rate their runner, how would you design an additional table for this new dataset - generate a schema for this new table and insert your own data for ratings for each successful customer order between 1 to 5.
+
+I'm designing a rating system based on the speed (km per minute) of the runners. Slower runners receive lower scores while faster ones receive higher.
+
+````sql
+CREATE TABLE ratings ("rating" INT, "km_per_min" string);
+INSERT INTO ratings
+ ("rating", "km_per_min")
+VALUES 
+  (1, 0 - .5),
+  (2, .51 - .75,
+  (3, .76 - 1),
+  (4, 1.1 - 1.25),
+  (5, 1.26+)
+````
+
+![d3_ratings](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/9a3b4d62-ffab-403c-9f0a-ea19d3c66f3f)
+
+
+Then I wrote a query that rated all the runners based on the table above.
+
+````sql
+WITH CTE as (
+SELECT order_id, runner_id, distance, duration, ROUND(distance::numeric/duration::numeric, 2) as km_per_min
+FROM runner_orders
+order by km_per_min)
+SELECT *, 
+  CASE
+  WHEN km_per_min BETWEEN 0 and .5 THEN 1
+  WHEN km_per_min BETWEEN .51 and .75 THEN 2
+  WHEN km_per_min BETWEEN .76 and 1 THEN 3
+  WHEN km_per_min BETWEEN 1.1 and 1.25 THEN 4
+  WHEN km_per_min > 1.26 THEN 5
+  WHEN km_per_min is NULL THEN NULL
+  END as rating
+FROM CTE
+````
+
+![d3_runners_rated](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/7f67e94e-68c6-4192-97a3-e37ed4c2230a)
+
+
+### 4. Using your newly generated table - can you join all of the information together to form a table that has the following information for successful deliveries?
+   
+- customer_id
+- order_id
+- runner_id
+- rating
+- order_time
+- pickup_time
+- Time between order and pickup
+- Delivery duration
+- Average speed
+- Total number of pizzas
+
+First, I created a temporary table with similar information to the table in the last question.
+
+````sql
+CREATE TEMP TABLE runner_orders_final AS (
+WITH CTE as (
+SELECT order_id, runner_id, pickup_time, distance, duration, ROUND(distance::numeric/duration::numeric, 2) as km_per_min
+FROM runner_orders
+order by km_per_min)
+SELECT *, 
+  CASE
+  WHEN km_per_min BETWEEN 0 and .5 THEN 1
+  WHEN km_per_min BETWEEN .51 and .75 THEN 2
+  WHEN km_per_min BETWEEN .76 and 1 THEN 3
+  WHEN km_per_min BETWEEN 1.1 and 1.25 THEN 4
+  WHEN km_per_min > 1.26 THEN 5
+  WHEN km_per_min is NULL THEN NULL
+  END as rating
+FROM CTE)
+````
+
+Then I joined the customer_orders table and extract relevant information.
+
+````sql
+SELECT c.order_id, runner_id, rating, order_time, pickup_time, pickup_time-order_time as time_diff, duration, km_per_min, COUNT(pizza_id) as total_pizzas
+FROM customer_orders c
+INNER JOIN runner_orders_final r
+ON c.order_id = r.order_id
+WHERE c.order_id NOT IN (6, 9)
+GROUP BY c.order_id, customer_id, runner_id, rating, order_time, pickup_time, time_diff, duration, km_per_min
+ORDER BY order_id, customer_id
+````
+
+![d4](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/103cfd6d-d988-45b4-bf7a-1d540144562f)
+
+###  5. If a Meat Lovers pizza was $12 and Vegetarian $10 fixed prices with no cost for extras and each runner is paid $0.30 per kilometre traveled - how much money does Pizza Runner have left over after these deliveries?
+
+
+````sql
+SELECT 
+ (SELECT SUM(CASE WHEN pizza_id = 1 THEN 12 ELSE 10 END)  FROM customer_orders WHERE order_id NOT IN (6,9)) as pizza_revenue,
+ (SELECT(ROUND(SUM(CAST(distance AS NUMERIC) * .3), 2)) FROM runner_orders) as runner_fees,
+ (SELECT SUM(CASE WHEN pizza_id = 1 THEN 12 ELSE 10 END)  FROM customer_orders WHERE order_id NOT IN (6,9)) -
+ (SELECT (SUM(distance)*.3) FROM runner_orders) AS Profit
+FROM customer_orders c
+INNER JOIN runner_orders r
+ON r.order_id = c.order_id
+LIMIT 1
+````
+
+![d5](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/1635085e-5fc3-43de-aca4-7b5bb657b8b0)
+
+
+## E. Bonus Questions
+
+If Danny wants to expand his range of pizzas - how would this impact the existing data design? Write an INSERT statement to demonstrate what would happen if a new Supreme pizza with all the toppings was added to the Pizza Runner menu?
+I first wrote a query to alter the 'pizza _names' table.
+
+````sql
+INSERT INTO pizza_names(pizza_id, pizza_name)
+VALUES (3, 'Supreme')
+````
+![E1](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/4e0a1ecd-12dc-47a0-babf-57961f6939f9)
+
+Then I wrote more queries to alter the 'pizza_recipes' and 'pizza_recipes_2' tables
+
+````sql
+INSERT INTO pizza_recipes (pizza_id, toppings)
+VALUES (3, '1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12')
+````
+
+![E2](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/074688c3-60d4-4de2-8794-170e0c854e5f)
+
+````sql
+INSERT INTO pizza_recipes_2 (pizza_id, toppings)
+VALUES 
+(3, 1),
+(3, 2),
+(3, 3),
+(3, 4),
+(3, 5),
+(3, 6),
+(3, 7),
+(3, 8),
+(3, 9),
+(3, 10),
+(3, 11),
+(3, 12);
+````
+![E3](https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/9f1de47e-9183-4ffa-8eb7-c57a491b4cc6)
+
+## Conclusion
+This case study was tough! It developed my skills in using aggregate functions, subqueries, temporary tables, joins, and CASE statements. See you at the next one!
+
