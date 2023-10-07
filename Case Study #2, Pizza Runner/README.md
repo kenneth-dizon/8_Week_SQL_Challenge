@@ -1,5 +1,7 @@
 # Case Study #2, Pizza Runner
 
+I’m on the second case study of the challenge. This one pushed me to think creatively!
+
 <p align="center">
 <img src="https://github.com/kenneth-dizon/8_Week_SQL_Challenge/assets/141383645/16ac8aa4-ba14-4d20-8e3a-399d45473694">
 </p>
